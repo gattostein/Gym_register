@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#0f172a">
+  <title>GymLog • PWA v2</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#0b1220; --card:#0f172a; --text:#e5e7eb; --muted:#9ca3af; --accent:#22d3ee; --ok:#34d399; --warn:#f59e0b; --bad:#ef4444; border-color:#1f2937;}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;background:#0c1426aa;backdrop-filter:blur(6px);padding:12px 16px;border-bottom:1px solid var(--border)}
+    h1{margin:0;font-size:18px;letter-spacing:.3px}
+    main{max-width:1000px;margin:20px auto;padding:0 16px;display:grid;gap:16px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px}
+    label{font-size:12px;color:var(--muted)}
+    input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:var(--text)}
+    button{cursor:pointer;border:0;padding:10px 14px;border-radius:12px;background:var(--accent);color:#00131a;font-weight:700}
+    button.secondary{background:#1f2937;color:#e5e7eb}
+    .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .row2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .grid{display:grid;gap:12px}
+    .sets{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:6px 10px;border:1px solid #334155;border-radius:999px}
+    .list{display:grid;gap:10px}
+    .item{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px dashed #334155;border-radius:12px}
+    .muted{color:var(--muted);font-size:12px}
+    .pr{font-size:12px;color:var(--ok);margin-left:8px}
+    .bad{color:var(--bad)} .ok{color:var(--ok)}
+    .footer{display:flex;gap:8px;flex-wrap:wrap}
+    .danger{background:var(--bad);color:white}
+    canvas{width:100%;height:220px;background:#0b1220;border-radius:12px;border:1px solid #1f2937}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .template{display:flex;gap:8px;flex-wrap:wrap}
+    .badge{padding:6px 10px;border-radius:999px;border:1px solid #334155;cursor:pointer}
+    .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .kpi .box{background:#0b1220;border:1px solid #334155;border-radius:12px;padding:12px}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏋️ GymLog — PWA v2</h1>
+    <div class="muted">Añade a pantalla de inicio en iPhone para uso tipo app (offline).</div>
+  </header>
+  <main>
+    <section class="card grid" id="form-card">
+      <div class="row3">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="date">
+        </div>
+        <div>
+          <label>Tipo de día</label>
+          <select id="dayType">
+            <option value="Espalda">Espalda</option>
+            <option value="Pecho">Pecho</option>
+            <option value="Piernas">Piernas</option>
+            <option value="Accesorios">Accesorios</option>
+          </select>
+        </div>
+        <div>
+          <label>Notas</label>
+          <input id="notes" placeholder="opcional">
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Plantillas (4–5 principales):</label>
+        <div class="template" id="tplBar"></div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>Ejercicio</label>
+          <input id="exercise" placeholder="Press banca / Sentadilla / Dominadas...">
+        </div>
+        <div>
+          <label>Se sintió</label>
+          <select id="feels">
+            <option value="😄">😄 Muy fácil</option>
+            <option value="🙂">🙂 Cómodo</option>
+            <option value="😐" selected>😐 Medio</option>
+            <option value="😣">😣 Pesado</option>
+            <option value="🫠">🫠 Muy pesado</option>
+            <option value="💀">💀 Al límite</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Series</label>
+          <input type="number" id="sets" value="3" min="1">
+        </div>
+        <div>
+          <label>Reps</label>
+          <input type="number" id="reps" value="10" min="1">
+        </div>
+        <div>
+          <label>Peso (kg)</label>
+          <input type="number" id="weight" value="20" step="0.5" min="0">
+        </div>
+        <div style="display:flex;align-items:end;gap:8px">
+          <button id="add">Añadir set</button>
+          <button class="secondary" id="quick10">+10 kg</button>
+        </div>
+      </div>
+
+      <div class="sets" id="setsList"></div>
+
+      <div class="grid" id="lastSessionBox" style="display:none">
+        <div class="kpi">
+          <div class="box">
+            <div class="muted">Última vez (fecha)</div>
+            <div id="lastDate" class="mono">—</div>
+          </div>
+          <div class="box">
+            <div class="muted">Mejor set (1RM est)</div>
+            <div id="lastBest" class="mono">—</div>
+          </div>
+          <div class="box">
+            <div class="muted">Volumen total</div>
+            <div id="lastVol" class="mono">—</div>
+          </div>
+        </div>
+        <div class="muted" id="lastSets">Sets previos: —</div>
+      </div>
+
+      <div class="footer">
+        <button id="save">Guardar sesión</button>
+        <button class="secondary" id="exportCSV">Exportar CSV</button>
+        <button class="secondary" id="exportJSON">Exportar JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="secondary" id="importBtn">Importar JSON</button>
+        <button class="danger" id="eraseAll">Borrar todo</button>
+      </div>
+    </section>
+
+    <section class="card grid">
+      <div class="toolbar">
+        <h3 style="margin:0">📈 Progreso por ejercicio</h3>
+        <select id="exerciseFilter"></select>
+        <select id="metric">
+          <option value="e1rm" selected>1RM estimado</option>
+          <option value="volume">Volumen total</option>
+        </select>
+      </div>
+      <canvas id="chart"></canvas>
+    </section>
+
+    <section class="card grid">
+      <h3 style="margin:0">📒 Historial</h3>
+      <div class="list" id="history"></div>
+    </section>
+  </main>
+
+  <script>
+  const $ = (s)=>document.querySelector(s);
+  const dbKey = "gymlog.v2";
+  let state = JSON.parse(localStorage.getItem(dbKey) || '{"sessions":[]}');
+  let pendingSets = [];
+
+  const TEMPLATES = {
+    "Espalda": ["Dominadas", "Remo con barra", "Remo con mancuerna", "Lat pulldown", "Remo en máquina"],
+    "Pecho": ["Press banca", "Press mancuerna inclinado", "Aperturas mancuerna", "Press en máquina", "Fondos (dips)"],
+    "Piernas": ["Sentadilla", "Prensa", "Hip thrust", "Peso muerto rumano", "Extensión/cuádriceps"],
+    "Accesorios": ["Curl bíceps", "Extensión tríceps", "Elevaciones laterales", "Face pulls", "Core/abdominales"]
+  };
+
+  function fmtDate(d){ return new Date(d).toISOString().slice(0,10); }
+  function epley1RM(w,r){ return Math.round((w * (1 + r/30))*10)/10; }
+  function volume(sets){ return sets.reduce((s,x)=> s + (x.reps * x.weight), 0); }
+
+  function saveState(){ localStorage.setItem(dbKey, JSON.stringify(state)); render(); }
+
+  function renderTemplates(){
+    const wrap = $("#tplBar"); wrap.innerHTML = "";
+    const day = $("#dayType").value;
+    (TEMPLATES[day]||[]).forEach(name=>{
+      const b = document.createElement('div');
+      b.className = "badge";
+      b.textContent = name;
+      b.onclick = ()=>{ $("#exercise").value = name; updateLastSession(name); };
+      wrap.appendChild(b);
+    });
+  }
+
+  function addPendingSet(){
+    const reps = +$('#reps').value||0;
+    const weight = +$('#weight').value||0;
+    const feels = $('#feels').value || "😐";
+    if(!reps||weight<0) return;
+    pendingSets.push({reps, weight, feels});
+    renderPendingSets();
+  }
+
+  function renderPendingSets(){
+    const wrap = $('#setsList'); wrap.innerHTML = "";
+    pendingSets.forEach((s,i)=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `${s.reps} reps × ${s.weight} kg ${s.feels} <span class="muted">(#${i+1})</span>`;
+      chip.onclick = ()=>{ pendingSets.splice(i,1); renderPendingSets(); };
+      wrap.appendChild(chip);
+    });
+  }
+
+  function saveSession(){
+    const date = $('#date').value || fmtDate(Date.now());
+    const dayType = $('#dayType').value;
+    const exercise = $('#exercise').value.trim();
+    if(!exercise || pendingSets.length===0) return;
+    const notes = $('#notes').value.trim();
+    state.sessions.push({id:crypto.randomUUID(), date, dayType, exercise, sets: pendingSets.slice(), notes});
+    pendingSets = [];
+    $('#exercise').value=""; $('#notes').value="";
+    saveState();
+  }
+
+  function getExercises(){
+    return [...new Set(state.sessions.map(s=>s.exercise))].sort((a,b)=>a.localeCompare(b));
+  }
+
+  function lastSessionForExercise(ex){
+    const list = state.sessions.filter(s=>s.exercise===ex).sort((a,b)=> b.date.localeCompare(a.date));
+    return list[0] || null;
+  }
+
+  function updateLastSession(ex){
+    const box = $('#lastSessionBox');
+    const last = lastSessionForExercise(ex);
+    if(!last){ box.style.display="none"; return; }
+    box.style.display="grid";
+    $('#lastDate').textContent = last.date;
+    const best = Math.max(...last.sets.map(x=>epley1RM(x.weight,x.reps)));
+    $('#lastBest').textContent = best.toFixed(1);
+    $('#lastVol').textContent = volume(last.sets).toFixed(1);
+    $('#lastSets').textContent = "Sets previos: " + last.sets.map(x=>`${x.reps}x${x.weight}kg ${x.feels}`).join(' · ');
+  }
+
+  function renderHistory(){
+    const el = $('#history'); el.innerHTML = "";
+    const sessions = [...state.sessions].sort((a,b)=> b.date.localeCompare(a.date));
+    sessions.forEach(s=>{
+      const best = s.sets.map(x=>epley1RM(x.weight,x.reps)).reduce((m,v)=>Math.max(m,v),0);
+      const vol = volume(s.sets);
+      const item = document.createElement('div');
+      item.className = 'item';
+      const left = document.createElement('div');
+      left.innerHTML = `<div><strong>${s.exercise}</strong> <span class="muted">(${s.date} — ${s.dayType||'—'})</span>` +
+                       `<span class="pr">1RM est: ${best.toFixed(1)}</span></div>` +
+                       `<div class="muted">${s.sets.map(x=>`${x.reps}x${x.weight}kg ${x.feels}`).join(' · ')} · Vol: ${vol.toFixed(1)}` + (s.notes? ` · ${s.notes}` : '') + `</div>`;
+      const right = document.createElement('div');
+      const del = document.createElement('button');
+      del.className = 'secondary'; del.textContent = 'Eliminar';
+      del.onclick = ()=>{ state.sessions = state.sessions.filter(x=>x.id!==s.id); saveState(); };
+      right.appendChild(del);
+      item.appendChild(left); item.appendChild(right);
+      el.appendChild(item);
+    });
+  }
+
+  function renderExerciseFilter(){
+    const exs = getExercises();
+    const sel = $('#exerciseFilter');
+    sel.innerHTML = "<option value=''>— elegir —</option>" + exs.map(x=>`<option>${x}</option>`).join("");
+  }
+
+  function renderChart(ex){
+    const canvas = $('#chart');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(!ex){ return; }
+
+    const metric = $('#metric').value;
+    const points = state.sessions
+      .filter(s=>s.exercise===ex)
+      .map(s=>{
+        const best = Math.max(...s.sets.map(x=>epley1RM(x.weight,x.reps)));
+        const vol = volume(s.sets);
+        return {date:s.date, y: metric==='e1rm' ? best : vol};
+      })
+      .sort((a,b)=> a.date.localeCompare(b.date));
+
+    if(points.length===0) return;
+
+    const pad=30, W=canvas.width=canvas.clientWidth*2, H=canvas.height=220*2;
+    const xs = points.map(p=>new Date(p.date).getTime());
+    const ys = points.map(p=>p.y);
+    const xMin=Math.min(...xs), xMax=Math.max(...xs);
+    const yMin=Math.min(...ys), yMax=Math.max(...ys);
+    const xScale=t=> pad + (W-2*pad)*((t-xMin)/(xMax-xMin||1));
+    const yScale=v=> H-pad - (H-2*pad)*((v-yMin)/(yMax-yMin||1));
+
+    // axes
+    ctx.strokeStyle = "#334155"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
+
+    // grid + labels
+    ctx.fillStyle = "#9ca3af"; ctx.font = "24px system-ui";
+    const ySteps=5; for(let i=0;i<=ySteps;i++){ const v=yMin+(i*(yMax-yMin)/ySteps); const y=yScale(v);
+      ctx.strokeStyle="#1f2937"; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+      ctx.fillText(String(Math.round(v)), 4, y+8);
+    }
+    ctx.fillText(points[0].date, pad, H-6);
+    ctx.fillText(points[points.length-1].date, W-220, H-6);
+
+    // line
+    ctx.strokeStyle="#22d3ee"; ctx.lineWidth=4; ctx.beginPath();
+    points.forEach((p,i)=>{ const x=xScale(new Date(p.date).getTime()), y=yScale(p.y); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+    ctx.fillStyle="#22d3ee";
+    points.forEach(p=>{ const x=xScale(new Date(p.date).getTime()), y=yScale(p.y); ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill(); });
+  }
+
+  function exportJSON(){
+    const blob = new Blob([localStorage.getItem(dbKey) || '{"sessions":[]}'], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download="gymlog-export.json"; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }
+
+  function exportCSV(){
+    const rows = [["date","dayType","exercise","reps","weight","feels","notes","e1rm_set","volume_session"]];
+    state.sessions.forEach(s=>{
+      const vol = volume(s.sets);
+      s.sets.forEach(st=>{
+        rows.push([s.date, s.dayType||"", s.exercise, st.reps, st.weight, st.feels||"", (epley1RM(st.weight,st.reps)||"").toString().replace('.',','), vol.toString().replace('.',','), s.notes||""]);
+      });
+    });
+    const csv = rows.map(r=>r.map(x=> (typeof x==="string" && x.includes(','))? `"${x}"` : x).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download="gymlog-export.csv"; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }
+
+  function importJSONFromFile(file){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{ const data = JSON.parse(reader.result);
+        if(data && Array.isArray(data.sessions)){ state = data; saveState(); }
+      }catch{ alert("Archivo inválido"); }
+    };
+    reader.readAsText(file);
+  }
+
+  function render(){
+    renderTemplates();
+    renderHistory();
+    renderExerciseFilter();
+    renderChart($('#exerciseFilter').value);
+    // actualizar box de última sesión cuando cambia el input ejercicio
+    updateLastSession($('#exercise').value.trim());
+  }
+
+  // --- Events ---
+  $('#add').onclick = addPendingSet;
+  $('#quick10').onclick = ()=>{ $('#weight').value = (+$('#weight').value||0)+10; };
+  $('#save').onclick = saveSession;
+  $('#exercise').addEventListener('input', (e)=> updateLastSession(e.target.value.trim()));
+  $('#dayType').onchange = renderTemplates;
+  $('#exerciseFilter').onchange = (e)=> renderChart(e.target.value);
+  $('#metric').onchange = ()=> renderChart($('#exerciseFilter').value);
+  $('#exportJSON').onclick = exportJSON;
+  $('#exportCSV').onclick = exportCSV;
+  $('#importBtn').onclick = ()=> $('#importFile').click();
+  $('#importFile').onchange = (e)=>{ const f=e.target.files[0]; if(f) importJSONFromFile(f); };
+  $('#eraseAll').onclick = ()=>{ if(confirm("¿Seguro que quieres borrar todos los datos?")){ state={sessions:[]}; saveState(); } };
+
+  // defaults
+  $('#date').value = fmtDate(Date.now());
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
+  render();
+  </script>
+</body>
+</html>
